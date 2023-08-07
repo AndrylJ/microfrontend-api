@@ -1,0 +1,65 @@
+service: api
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  architecture: arm64
+  httpApi:
+    shouldStartNameWithService: true
+    cors:
+      allowedOrigins:
+        - ${env:ALLOWED_ORIGIN}
+      allowedHeaders:
+        - Content-Type
+      allowedMethods:
+        - GET
+        - POST
+        - DELETE
+        - PATCH
+        - OPTIONS
+
+package:
+  individually: true
+  include:
+    - 'node_modules/.prisma/client/schema.prisma'
+    - 'node_modules/.prisma/client/libquery_engine-linux-*'
+
+functions:
+  UserIndex:
+    handler: ${self:custom.userHandlersDir}/index.listUsersHandler
+    events:
+      - httpApi: GET /v1/users
+  CreateUser:
+    handler: ${self:custom.userHandlersDir}/index.createUserHandler
+    events:
+      - httpApi: POST /v1/users
+  UserDetail:
+    handler: ${self:custom.userHandlersDir}/index.getUserHandler
+    events:
+      - httpApi: GET /v1/users/{uuid}
+  UpdateUser:
+    handler: ${self:custom.userHandlersDir}/index.updateUserHandler
+    events:
+      - httpApi: PATCH /v1/users/{uuid}
+  DeleteUser:
+    handler: ${self:custom.userHandlersDir}/index.deleteUserHandler
+    events:
+      - httpApi: DELETE /v1/users/{uuid}
+
+custom:
+  useChildProcess: true
+  userHandlersDir: src/user/infraestructure/serverless/v1
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: true
+    watch:
+      pattern: ['src/**/*.ts']
+      ignore: ['temp/**/*']
+
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-esbuild
+  - serverless-offline
